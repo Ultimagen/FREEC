@@ -1299,6 +1299,10 @@ int runWithDefinedPloidy(int ploidy, GenomeCopyNumber & sampleCopyNumber, Genome
             sampleCopyNumber.fillInRatio();
             cout << "..Filled in read counts -> done\n";
         }
+        if (isControlIsPresent)
+        {
+            controlCopyNumber.fillInRatio();
+        }
 
     //segmentation:
         if (knownContamination>0) {
