@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     python3-pip \
     ; \
     apt-get autoclean && rm -rf /var/lib/apt/lists/*
+RUN pip install pyfaidx
 
 COPY src/freec /
 RUN ln -s /freec /usr/bin/freec
