@@ -22,6 +22,7 @@ def run(argv):
     parser.add_argument("--forceGCcontentNormalization", help="general:forceGCcontentNormalization", required=False)
     parser.add_argument("--sex", help="general:sex", required=False)
     parser.add_argument("--ploidy", help="general:ploidy", required=False)
+    parser.add_argument("--gemMappabilityFile", help="general:gemMappabilityFile", required=False)
 
     parser.add_argument("--sample_mateFile", help="sample:mateFile", required=True )
     parser.add_argument("--sample_mateCopyNumberFile", help="sample:mateCopyNumberFile", required=True )
@@ -66,6 +67,9 @@ def run(argv):
         config_text = '\n'.join([config_text, str])
     if args.ploidy:
         str = 'ploidy=' + args.ploidy
+        config_text = '\n'.join([config_text, str])
+    if args.gemMappabilityFile:  
+        str = 'gemMappabilityFile=' + args.gemMappabilityFile
         config_text = '\n'.join([config_text, str])
 
     ### sample section ###
