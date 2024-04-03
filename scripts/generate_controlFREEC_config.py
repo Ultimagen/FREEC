@@ -15,6 +15,7 @@ def run(argv):
     parser.add_argument("--BedGraphOutput", help="general:BedGraphOutput", required=True)
     parser.add_argument("--chrLenFile",help="general:chrLenFile",required=True)
     parser.add_argument("--contaminationAdjustment", help="general:contaminationAdjustment", required=True)
+    parser.add_argument("--contamination", help="general:contamination", required=False)
     parser.add_argument("--maxThreads", help="general:maxThreads", required=True)
     parser.add_argument("--window", help="general:window", required=True)
     parser.add_argument("--chrFiles", help="general:chrFiles", required=True)
@@ -51,6 +52,9 @@ def run(argv):
     config_text = '\n'.join([config_text, str])
     str = 'contaminationAdjustment=' + args.contaminationAdjustment
     config_text = '\n'.join([config_text, str])
+    if args.contamination:
+        str = 'contamination=' + args.contamination
+        config_text = '\n'.join([config_text, str])
     str = 'maxThreads=' + args.maxThreads
     config_text = '\n'.join([config_text, str])
     str = 'window=' + args.window
