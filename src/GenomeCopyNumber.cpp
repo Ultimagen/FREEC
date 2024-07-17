@@ -21,6 +21,9 @@ http://www.fsf.org/licensing/licenses
 
 #include "GenomeCopyNumber.h"
 
+#include <iostream>
+#include <fstream>
+
 using namespace std ;
 
 GenomeCopyNumber::GenomeCopyNumber(void)
@@ -1171,18 +1174,27 @@ long double GenomeCopyNumber::calculateRSS(int ploidy)
 	}
 
     long double RSS = 0;
+    auto out_file_name = "RSS_expected_observed.p" + std::to_string(ploidy) + ".tsv";
+    ofstream MyFile(out_file_name);
     for (int i = 0; i < (int)observedvalues.size(); i++)
         {
         if ((observedvalues[i]!=NA) && (expectedvalues[i]!=NA))
             {
             long double diff = (long double)observedvalues[i] - (long double)round(ploidy*expectedvalues[i])/ploidy;
             RSS = RSS + (long double)pow(diff,2);
+
+            long double expected_round = (long double)round(ploidy*expectedvalues[i])/ploidy;
+            long double RSS_value = (long double)pow(diff,2);
+            MyFile << observedvalues[i] << "\t" << expectedvalues[i] << "\t" << expected_round << "\t" << diff << "\t" << RSS_value << "\n";
             }
         }
+    MyFile.close();
+
     if (observedvalues.size()==0) {
         return 0;
     }
     double normRSS = (RSS/observedvalues.size());
+    cout << "normRSS = " << normRSS << "\n";
     observedvalues.clear();expectedvalues.clear();
     return normRSS;
 }
@@ -2983,6 +2995,44 @@ void GenomeCopyNumber::calculateSomaticCNVs (std::vector <EntryCNV> controlCNVs,
 	}
 
 }
+
+void GenomeCopyNumber::printSegments(std::string const& outFile) {
+    std::ofstream file (outFile.c_str());
+    map<string,int>::iterator it;
+
+	file << "chr\tstart\tend\tmedian_ratio\tsd_ratio\n";
+    for (int i = 0; i < (int)chrCopyNumber_.size(); i++) {
+        printSegments(chrCopyNumber_[i],file);
+	}
+	file.close();
+    // // for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ) {
+    // for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ) {        
+		
+	// }
+    file.close();
+}
+
+void GenomeCopyNumber::printSegments(ChrCopyNumber chr_copy_number, std::ofstream & file) {
+	string::size_type pos = 0;
+	string chrNumber = chr_copy_number.getChromosome();
+	if ( ( pos = chrNumber.find("chr", pos)) != string::npos )
+		chrNumber.replace( pos, 3, "" );
+	map<string,ChrCopyNumber>::iterator it;
+	int index = findIndex(chrNumber);
+	if (index == NA) {return;}
+	//cout << "..index found "<<index<<"\n";
+	int segments_length = chrCopyNumber_[index].getSegmentsSize();
+	//cout <<length<<" == "<<chrCopyNumber_[index].getValues().size() <<"\n";
+	for (int i = 0; i< segments_length-1; i++) {
+        int start = chrCopyNumber_[index].getSegmentsAtPoint(i);
+		int end = chrCopyNumber_[index].getSegmentsAtPoint(i+1);
+		float median_ratio = chrCopyNumber_[index].getSegmentsMedianRatiosAtPoint(i);
+		float sd_ratio = chrCopyNumber_[index].getSegmentsSdRatiosAtPoint(i);
+        file << chrNumber <<"\t"<<start<<"\t"<<end<<"\t"<<median_ratio<<"\t"<<sd_ratio<<"\n";
+	}
+	cout <<"..writing segments for " <<chrNumber <<"->done!\n";
+}
+
 void GenomeCopyNumber::printRatioBedGraph(std::string const& chr, std::ofstream & file, std::string const& typeCNA) {
     string::size_type pos = 0;
     float value;
@@ -3558,35 +3608,35 @@ void GenomeCopyNumber::addBAFinfo(SNPinGenome & snpingenome) {
 
         chrCopyNumber_[index].addBAFinfo(snpingenome,indexSNP);
 
-		//int length = chrCopyNumber_[index].getLength();
+		int length = chrCopyNumber_[index].getLength();
 
 		//create a vector with BAF
-//		chrCopyNumber_[index].createBAF(NA);
-//        int totalSNPnumber = snpingenome.SNP_atChr(indexSNP).getSize() ;
-//		int SNPcount = 0;
-//		float currentBAF = snpingenome.SNP_atChr(indexSNP).getValueAt(SNPcount);
-//		int getSNPpos = snpingenome.SNP_atChr(indexSNP).getPositionAt(SNPcount);
-//        float minBAF;
-//		for (int i = 0; i<length; i++) {
-//		    int left = chrCopyNumber_[index].getCoordinateAtBin(i);
-//		    int right = chrCopyNumber_[index].getEndAtBin(i);
-//		    if (getSNPpos>=left && getSNPpos <=right) {
-//		        minBAF = chrCopyNumber_[index].getBAFat(i);
-//                if (minBAF==NA) {
-//                    chrCopyNumber_[index].setBAFat(i,currentBAF);
-//                } else {
-//                    chrCopyNumber_[index].setBAFat(i,min(minBAF,currentBAF));
-//                }
-//		    } else if (getSNPpos<left) {
-//                if (SNPcount < totalSNPnumber) {
-//                    SNPcount++;
-//                    getSNPpos = snpingenome.SNP_atChr(indexSNP).getPositionAt(SNPcount);
-//                    currentBAF = snpingenome.SNP_atChr(indexSNP).getValueAt(SNPcount);
-//                    i=max(-1,i-windowSize_/step_-1);
-//                    //cout << SNPcount << " out of "<< totalSNPnumber<<"\n";
-//                }
-//            }
-//		}
+		chrCopyNumber_[index].createBAF(NA);
+        int totalSNPnumber = snpingenome.SNP_atChr(indexSNP).getSize() ;
+		int SNPcount = 0;
+		float currentBAF = snpingenome.SNP_atChr(indexSNP).getValueAt(SNPcount);
+		int getSNPpos = snpingenome.SNP_atChr(indexSNP).getPositionAt(SNPcount);
+        float minBAF;
+		for (int i = 0; i<length; i++) {
+		    int left = chrCopyNumber_[index].getCoordinateAtBin(i);
+		    int right = chrCopyNumber_[index].getEndAtBin(i);
+		    if (getSNPpos>=left && getSNPpos <=right) {
+		        minBAF = chrCopyNumber_[index].getBAFat(i);
+                if (minBAF==NA) {
+                    chrCopyNumber_[index].setBAFat(i,currentBAF);
+                } else {
+                    chrCopyNumber_[index].setBAFat(i,min(minBAF,currentBAF));
+                }
+		    } else if (getSNPpos<left) {
+                if (SNPcount < totalSNPnumber) {
+                    SNPcount++;
+                    getSNPpos = snpingenome.SNP_atChr(indexSNP).getPositionAt(SNPcount);
+                    currentBAF = snpingenome.SNP_atChr(indexSNP).getValueAt(SNPcount);
+                    i=max(-1,i-windowSize_/step_-1);
+                    //cout << SNPcount << " out of "<< totalSNPnumber<<"\n";
+                }
+            }
+		}
 	}
 }
 

@@ -95,6 +95,14 @@ public:
 
 	int getEndsSize();
 	int	getMappabilityLength();
+	
+	// added for print segments 
+	int getSegmentsAtPoint(int i);
+	int getSegmentsSize();
+	float getSegmentsMedianRatiosAtPoint(int i);
+	int getSegmentsMedianRatiosSize();
+	float getSegmentsSdRatiosAtPoint(int i);
+	float getSegmentsSdRatiosSize();
 
 	bool isMedianCalculated();
 	bool isSmoothed();

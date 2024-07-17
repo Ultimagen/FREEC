@@ -1190,7 +1190,9 @@ int main(int argc, char *argv[])
             }
         }
 
-	sampleCopyNumber.printRatio(myName+"_ratio.txt",0,printNA);
+	
+    sampleCopyNumber.printSegments(myName+"_segments.txt");
+    sampleCopyNumber.printRatio(myName+"_ratio.txt",0,printNA);
 	if (ifBedGraphOutPut) {
             sampleCopyNumber.printRatio(myName+"_ratio.BedGraph",1,printNA);
     }

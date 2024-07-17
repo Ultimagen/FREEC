@@ -75,6 +75,8 @@ public:
 	float evaluateContamination();
     float evaluateContaminationwithLR();
 
+	void printSegments(std::string const& outFile);
+	void printSegments(ChrCopyNumber chr_copy_number, std::ofstream & file);
 	void printRatio(std::string const& outFile, bool ifBedGraphOutPut, bool printNA);
 	void printRatio(std::string const& chr, std::string const& outFile, bool printNA);
 	void printRatio(std::string const& chr, std::ofstream & file, bool printNA);

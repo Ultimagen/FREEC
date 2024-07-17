@@ -663,15 +663,27 @@ void ChrCopyNumber::recalculateLogRatio (float constant) {
 }
 
 void ChrCopyNumber::recalculateRatioWithContam (float contamination, float normGenytype, bool isLogged) { //normGenytype==1 if AB, normGenytype==0.5 if A
-	if (!isLogged) {
-        for (int i = 0; i<length_; i++)
-            if (ratio_[i] != NA) {
-			//ratio_[i] = (ratio_[i]-contamination*normGenytype)/(1-contamination); //correct only for ploidy 2
-                ratio_[i] = (ratio_[i]*(1-contamination+2*contamination/ploidy_) -contamination*normGenytype/ploidy_*2)/(1-contamination);
-
-			if (ratio_[i]<0)
-				ratio_[i] = 0;
+	if (!isLogged) {	
+		auto out_file_name = "FC_correction_contam." + std::to_string(contamination) + ".tsv";
+		ofstream MyFile(out_file_name);
+		MyFile << "isLogged: "<< isLogged <<"; length_: " << length_ << "; ratio_size: " << ratio_.size() << "\n";
+		MyFile << "raw_FC\tFREEC_Corrected\tUG_Corrected\n";
+		for (int i = 0; i<length_; i++)
+		{
+			MyFile << ratio_[i] << "\t";
+				if (ratio_[i] != NA) {
+				//ratio_[i] = (ratio_[i]-contamination*normGenytype)/(1-contamination); //correct only for ploidy 2
+				float freec_correction = (ratio_[i]*(1-contamination+2*contamination/ploidy_) -contamination*normGenytype/ploidy_*2)/(1-contamination);				
+				float ug_correction = (ratio_[i]+contamination-1)/contamination;
+				MyFile << freec_correction << "\t" << ug_correction << "\n";
+				ratio_[i] = freec_correction;
+				
+				if (ratio_[i]<0)
+					ratio_[i] = 0;
+			}
+			MyFile << "\n";
 		}
+		MyFile.close();
     } else {
         for (int i = 0; i<length_; i++)
             if (ratio_[i] != NA) {
@@ -714,6 +726,23 @@ int ChrCopyNumber::getCoveredPart(int breakPointStart, int breakPointEnd) { //fo
 }
 
 void ChrCopyNumber::calculateCopyNumberMedian(int ploidy, int minCNAlength, bool noisyData,  bool CompleteGenomicsData, bool isLogged){ //create median profiles using 'bpfinal_' and store them in medianProfile_, info about medians themselves is stored in medianValues_ and about SD in sd_, lengths of fragments in bpLengths_
+	
+	auto out_file_name = "segments_info.p" + std::to_string(ploidy) + ".tsv";
+	ofstream MyFile(out_file_name,std::ios::app);
+	
+	// std::ifstream MyFile(out_file_name);
+	// // ofstream MyFile;
+	// if (MyFile.is_open())
+	// {	
+		
+	// 	cout<< "Segments File exists: " << out_file_name << ". appending chr" << chromosome_ << " to it\n";
+	// }
+	// else{
+	// 	cout<< "Segments File : " << out_file_name << ". appending chr" << chromosome_ << " to it\n";
+	// 	ofstream MyFile(out_file_name);
+	// 	MyFile << "chr\tstart\tend\tmedian_ratio\tsd_ratio\n";
+	// }
+
 	if (ploidy!=ploidy_) {
         cerr << "..Warning: in calculateCopyNumberMedian() class's ploidy is different from "<<ploidy<<"\n";
         ploidy_=ploidy;
@@ -886,6 +915,7 @@ void ChrCopyNumber::calculateCopyNumberMedian(int ploidy, int minCNAlength, bool
                // cout << "..Control: adding "<<medianBAFSym<< " to a fragment with median*ploidy="<<median*ploidy<< "\n";
 
 			}
+			MyFile << chromosome_ << "\t" << breakPointStart << "\t" << breakPointEnd << "\t" << median << "\t" << sd(data,median) << "\n";
 
 			breakPointStart = breakPointEnd+1;
 			data.clear();
@@ -909,6 +939,7 @@ void ChrCopyNumber::calculateCopyNumberMedian(int ploidy, int minCNAlength, bool
 
 	bpfinal_.pop_back(); //delete last point which is (length_-1)
 	isMedianCalculated_ = true;
+	MyFile.close();
 }
 
 
@@ -1132,6 +1163,27 @@ std::vector <int> ChrCopyNumber::getBreakPoints() {
 int ChrCopyNumber::getNumberOfFragments() {
 	return bpfinal_.size()+1;
 }
+
+//added get functions for print segments
+int ChrCopyNumber::getSegmentsAtPoint(int i) {
+	return bpfinal_[i];
+}
+int ChrCopyNumber::getSegmentsSize() {
+	return bpfinal_.size();
+}
+float ChrCopyNumber::getSegmentsMedianRatiosAtPoint(int i) {
+	return medianValues_[i];
+}
+int ChrCopyNumber::getSegmentsMedianRatiosSize() {
+	return medianValues_.size();
+}
+float ChrCopyNumber::getSegmentsSdRatiosAtPoint(int i) {
+	return sd_[i];
+}
+float ChrCopyNumber::getSegmentsSdRatiosSize() {
+	return sd_.size();
+}
+//finish get functions for print segments
 
 int ChrCopyNumber::nextNoNAIndex(int i1, int ploidy, int min_fragment) {
 	for (int i = i1+1; i<(int)medianValues_.size(); i++)
