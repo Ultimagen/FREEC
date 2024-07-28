@@ -3026,8 +3026,8 @@ void GenomeCopyNumber::printSegments(ChrCopyNumber chr_copy_number, std::ofstrea
 	for (int i = 0; i< segments_length-1; i++) {
         int start = windowSize_ * chrCopyNumber_[index].getSegmentsAtPoint(i);
 		int end = windowSize_ * chrCopyNumber_[index].getSegmentsAtPoint(i+1);
-		float median_ratio = chrCopyNumber_[index].getSegmentsMedianRatiosAtPoint(i);
-		float sd_ratio = chrCopyNumber_[index].getSegmentsSdRatiosAtPoint(i);
+		float median_ratio = chrCopyNumber_[index].getSegmentsMedianRatiosAtPoint(i+1);
+		float sd_ratio = chrCopyNumber_[index].getSegmentsSdRatiosAtPoint(i+1);
         file <<"chr"<<chrNumber<<"\t"<<start<<"\t"<<end<<"\t"<<median_ratio<<"\t"<<sd_ratio<<"\n";
 	}
 	cout <<"..writing segments for " <<chrNumber <<"->done!\n";
