@@ -1321,9 +1321,61 @@ int GenomeCopyNumber::fillInRatio() {
     return 1;
 }
 
+void GenomeCopyNumber::calculateRatio( GenomeCopyNumber & controlCopyNumber){
+    
+    vector <float> y;
+    vector <float> x;
+    //fill x and y:
+        vector<ChrCopyNumber>::iterator it;
+        for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ) {
+            if (! (it->getChromosome().find("X")!=string::npos || it->getChromosome().find("Y")!=string::npos)) {
+                vector <float> controlcounts = controlCopyNumber.getChrCopyNumber(it->getChromosome()).getValues() ;
+                //check that everything is all right:
+                if (int(controlcounts.size())!=it->getLength()) {
+                    cerr << "Possible Error: calculateMedianAround ()\n";
+                }
+                for (int i = 0; i< it->getLength(); i++) {
+                    if (it->getValueAt(i)>0) {
+                        x.push_back(controlcounts[i]);
+                        y.push_back(it->getValueAt(i));
+                    }
+                }
+                controlcounts.clear();
+            }
+        }
+        float control_median = get_median(x);
+        float control_mean = get_mean(x);       
+        float sample_median = get_median(y);
+        float sample_mean = get_mean(y);
+        vector <float> y_unalternated;
+        for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ){
+            if (! (it->getChromosome().find("X")!=string::npos || it->getChromosome().find("Y")!=string::npos)){
+                vector <float> controlcounts = controlCopyNumber.getChrCopyNumber(it->getChromosome()).getValues() ;
+                for (int i = 0; i< it->getLength(); i++) {
+                    if (it->getValueAt(i)>0) {
+                        float rc_sample = it->getValueAt(i);
+                        // float naive_ratio = (rc_sample/sample_median)/(controlcounts[i]/control_median);
+                        float naive_ratio = (rc_sample/sample_mean)/(controlcounts[i]/control_mean);
+                        if((naive_ratio>0.97) && (naive_ratio<1.03)){
+                            y_unalternated.push_back(rc_sample);
+                        }
+                    }
+                }
+                controlcounts.clear();
+            }
+        }
+        sample_median = get_median(y_unalternated);
+        sample_mean = get_mean(y_unalternated);
+        cout << "sample median value: " << sample_median << "\n";
+
+        for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ) {
+                // it->calculateRatio(controlCopyNumber.getChrCopyNumber(it->getChromosome()),control_median,sample_median);
+                it->calculateRatio(controlCopyNumber.getChrCopyNumber(it->getChromosome()),control_mean,sample_mean);
+            }
+        
+}
+
 int GenomeCopyNumber::calculateRatio( GenomeCopyNumber & controlCopyNumber, int degree, bool intercept) {
-
-
     int maximalNumberOfIterations = 300;
     int maximalNumberOfCopies = ploidy_*2;
     int realNumberOfIterations = maximalNumberOfIterations;
@@ -1566,6 +1618,7 @@ int GenomeCopyNumber::calculateRatio( GenomeCopyNumber & controlCopyNumber, int 
                 controlcounts.clear();
             }
         }
+
 	//const char * nametmp = "/bioinfo/users/vboeva/Desktop/TMP/Lena/patientT/xy.txt";
 	//std::ofstream file;
 	//file.open(nametmp);

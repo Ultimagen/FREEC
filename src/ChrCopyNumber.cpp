@@ -467,6 +467,32 @@ void ChrCopyNumber::calculateRatio(ChrCopyNumber control, const double * a, cons
 
 			if (mappabilityProfile_.size() == 0 || mappabilityProfile_[i] > minMappabilityPerWindow) {
                 ratio_[i] = readCount_[i]/polynomial(control.getValueAt(i),a,1,degree);
+				
+				if (ratio_[i]<0)
+					ratio_[i] = NA;
+			} else
+                ratio_[i] = NA;
+
+		} else
+			if (readCount_[i]==0)
+				//ratio_[i] = 1;
+				ratio_[i] = NA;
+			else
+				ratio_[i] = NA;
+		//cout << readCount_[i] << "\t" << control.getValueAt(i) << "\t" << ratio_[i] << "\n";
+	}
+}
+
+
+void ChrCopyNumber::calculateRatio(ChrCopyNumber control,const float control_median,const float sample_median){
+	if ((int)ratio_.size()!=length_)
+		ratio_.resize(length_);
+	for (int i = 0; i<length_; i++) {
+		if ((control.getLength()>i)&&(control.getValueAt(i) != 0)){
+
+			if (mappabilityProfile_.size() == 0 || mappabilityProfile_[i] > minMappabilityPerWindow) {
+				ratio_[i] = (readCount_[i]/sample_median)/(control.getValueAt(i)/control_median);
+				
 				if (ratio_[i]<0)
 					ratio_[i] = NA;
 			} else

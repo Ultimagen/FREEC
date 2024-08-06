@@ -43,6 +43,7 @@ public:
     void removeLowReadCountWindowsFromControl (int RCThresh);
 
     int fillInRatio();
+	void calculateRatio( GenomeCopyNumber & controlCopyNumber);
 	int calculateRatio( GenomeCopyNumber & controlCopyNumber, int degree, bool intercept) ;
     void calculateRatioUsingCG( GenomeCopyNumber & controlCopyNumber) ;
     void calculateRatioUsingCG_Regression( GenomeCopyNumber & controlCopyNumber) ;

@@ -1552,11 +1552,29 @@ float runEM (const vector<float>& x,const vector<float>& y,double * a, int degre
 
 	for (count = 0; count < NumberOfIterations; count++) {
 
+		// assign best ploidy for each window 
+		std::vector<float> res_at_ploidy;
+		std::vector<float> res_at_ploidy_for_median;
 		for (int i = 0; i <(int)x.size(); i++) {
 			for (int j = 0; j <= maximalNumberOfCopies; j++)
 				res[j] = fabs(polynomial(x[i],a, ( float(j)*(1-contamination)+2* contamination ) /  (ploidy*(1-contamination)+2*contamination), degree)-y[i]);
 			cluster[i] = get_min_index(res);
+			res_at_ploidy.push_back(res[ploidy]);
+			if(cluster[i] == ploidy) // keeping res values for windows with assigned ploidy == ploidy
+				res_at_ploidy_for_median.push_back(res[ploidy]);
 		}
+
+		//remove outliers
+		float median_res_at_ploidy = get_median(res_at_ploidy_for_median);
+		//cout << "Median residual at ploidy: " << median_res_at_ploidy << "\n";
+		for (int i = 0; i <(int)x.size(); i++){
+			if ((cluster[i] == ploidy) && (res_at_ploidy[i] > median_res_at_ploidy)) {
+				cluster[i] = NA;
+			}
+		}
+		res_at_ploidy.clear();
+		res_at_ploidy_for_median.clear();
+
 		int npoints = 0;
 		for (int i = 0; i <(int)x.size(); i++)
 			if (cluster[i] == ploidy)
