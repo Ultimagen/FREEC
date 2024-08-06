@@ -13,6 +13,7 @@ def run(argv):
     parser.add_argument("--sample_name", help="sample_name", required=True)
 
     parser.add_argument("--BedGraphOutput", help="general:BedGraphOutput", required=True)
+    parser.add_argument("--NaiveNormalization", help="general:NaiveNormalization", required=False)
     parser.add_argument("--chrLenFile",help="general:chrLenFile",required=True)
     parser.add_argument("--contaminationAdjustment", help="general:contaminationAdjustment", required=True)
     parser.add_argument("--contamination", help="general:contamination", required=False)
@@ -47,6 +48,8 @@ def run(argv):
     ### general section ###
     config_text = '\n'.join([config_text,'', '[general]'])
     str = 'BedGraphOutput=' + args.BedGraphOutput
+    config_text = '\n'.join([config_text, str])
+    str = 'NaiveNormalization=' + args.BedGraphOutput
     config_text = '\n'.join([config_text, str])
     str = 'chrLenFile='+ args.chrLenFile
     config_text = '\n'.join([config_text, str])
