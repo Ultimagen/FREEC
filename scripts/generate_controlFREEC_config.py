@@ -49,8 +49,9 @@ def run(argv):
     config_text = '\n'.join([config_text,'', '[general]'])
     str = 'BedGraphOutput=' + args.BedGraphOutput
     config_text = '\n'.join([config_text, str])
-    str = 'NaiveNormalization=' + args.BedGraphOutput
-    config_text = '\n'.join([config_text, str])
+    if args.NaiveNormalization:
+        str = 'NaiveNormalization=' + args.NaiveNormalization
+        config_text = '\n'.join([config_text, str])
     str = 'chrLenFile='+ args.chrLenFile
     config_text = '\n'.join([config_text, str])
     str = 'contaminationAdjustment=' + args.contaminationAdjustment
