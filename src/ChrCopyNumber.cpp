@@ -464,12 +464,11 @@ void ChrCopyNumber::calculateRatio(ChrCopyNumber control, const double * a, cons
 	for (int i = 0; i<length_; i++) {
 		if ((control.getLength()>i)&&(control.getValueAt(i) != 0)){
 			if (mappabilityProfile_.size() == 0 || mappabilityProfile_[i] > minMappabilityPerWindow) {
-                ratio_[i] = readCount_[i]/polynomial(control.getValueAt(i),a,1,degree);				
+                		ratio_[i] = readCount_[i]/polynomial(control.getValueAt(i),a,1,degree);				
 				if (ratio_[i]<0)
 					ratio_[i] = NA;
 			} else
-                ratio_[i] = NA;
-
+                		ratio_[i] = NA;
 		} else
 			if (readCount_[i]==0)
 				ratio_[i] = NA;
