@@ -1173,28 +1173,20 @@ long double GenomeCopyNumber::calculateRSS(int ploidy)
 		}
 	}
 
-    long double RSS = 0;
-    auto out_file_name = "RSS_expected_observed.p" + std::to_string(ploidy) + ".tsv";
-    ofstream MyFile(out_file_name);
+    long double RSS = 0;    
     for (int i = 0; i < (int)observedvalues.size(); i++)
         {
         if ((observedvalues[i]!=NA) && (expectedvalues[i]!=NA))
             {
             long double diff = (long double)observedvalues[i] - (long double)round(ploidy*expectedvalues[i])/ploidy;
             RSS = RSS + (long double)pow(diff,2);
-
-            long double expected_round = (long double)round(ploidy*expectedvalues[i])/ploidy;
-            long double RSS_value = (long double)pow(diff,2);
-            MyFile << observedvalues[i] << "\t" << expectedvalues[i] << "\t" << expected_round << "\t" << diff << "\t" << RSS_value << "\n";
             }
         }
-    MyFile.close();
 
     if (observedvalues.size()==0) {
         return 0;
     }
     double normRSS = (RSS/observedvalues.size());
-    cout << "normRSS = " << normRSS << "\n";
     observedvalues.clear();expectedvalues.clear();
     return normRSS;
 }
@@ -1343,10 +1335,12 @@ void GenomeCopyNumber::calculateRatio( GenomeCopyNumber & controlCopyNumber){
                 controlcounts.clear();
             }
         }
-        float control_median = get_median(x);
+        
         float control_mean = get_mean(x);       
         float sample_median = get_median(y);
         float sample_mean = get_mean(y);
+        const float minRatio = 0.97;
+        const float maxRatio = 1.03;
         vector <float> y_unalternated;
         for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ){
             if (! (it->getChromosome().find("X")!=string::npos || it->getChromosome().find("Y")!=string::npos)){
@@ -1354,9 +1348,8 @@ void GenomeCopyNumber::calculateRatio( GenomeCopyNumber & controlCopyNumber){
                 for (int i = 0; i< it->getLength(); i++) {
                     if (it->getValueAt(i)>0) {
                         float rc_sample = it->getValueAt(i);
-                        // float naive_ratio = (rc_sample/sample_median)/(controlcounts[i]/control_median);
                         float naive_ratio = (rc_sample/sample_mean)/(controlcounts[i]/control_mean);
-                        if((naive_ratio>0.97) && (naive_ratio<1.03)){
+                        if((naive_ratio>minRatio) && (naive_ratio<maxRatio)){
                             y_unalternated.push_back(rc_sample);
                         }
                     }
@@ -1369,7 +1362,6 @@ void GenomeCopyNumber::calculateRatio( GenomeCopyNumber & controlCopyNumber){
         cout << "sample median value: " << sample_median << "\n";
 
         for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ) {
-                // it->calculateRatio(controlCopyNumber.getChrCopyNumber(it->getChromosome()),control_median,sample_median);
                 it->calculateRatio(controlCopyNumber.getChrCopyNumber(it->getChromosome()),control_mean,sample_mean);
             }
         
@@ -3058,11 +3050,6 @@ void GenomeCopyNumber::printSegments(std::string const& outFile) {
         printSegments(chrCopyNumber_[i],file);
 	}
 	file.close();
-    // // for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ) {
-    // for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ) {        
-		
-	// }
-    file.close();
 }
 
 void GenomeCopyNumber::printSegments(ChrCopyNumber chr_copy_number, std::ofstream & file) {

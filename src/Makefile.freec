@@ -6,7 +6,7 @@
 # Eric Viara, Valentina Boeva January 2013
 #
 
-CXXOPT = -g
+CXXOPT = -g -O3
 
 EXTRA_CXXFLAGS = -DPROFILE_TRACE
 
