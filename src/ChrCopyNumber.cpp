@@ -577,24 +577,21 @@ void ChrCopyNumber::recalculateRatio(double *a, int degree) {
 	for (int i = 0; i<length_; i++) {
 		if (ratio_[i] != NA) {
 			x = GCprofile_[i];
+			//use a threshold, but correct using notN profile
+			if (mappabilityProfile_.size()>0) {
+				if ((x>0)&&(mappabilityProfile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
+					//ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
+					ratio_[i] = ratio_[i]/1;
+				else
+					ratio_[i] = NA;
+			} else {
+				if ((x>0)&&(notNprofile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
+					//ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
+					ratio_[i] = ratio_[i]/1;
+				else
+					ratio_[i] = NA;
 
-                //use a threshold, but correct using notN profile
-                if (mappabilityProfile_.size()>0) {
-                    if ((x>0)&&(mappabilityProfile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
-                        //ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
-						ratio_[i] = ratio_[i]/1;
-                    else
-                        ratio_[i] = NA;
-                } else {
-                    if ((x>0)&&(notNprofile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
-                        //ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
-						ratio_[i] = ratio_[i]/1;
-                    else
-                        ratio_[i] = NA;
-
-                }
-
-
+			}
 		}
 		if ((ratio_[i] != NA)&&(ratio_[i] < 0))
 			ratio_[i] = 0; //this happens if  polynomial(x,a,b,c,d) < 0
