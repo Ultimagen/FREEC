@@ -579,14 +579,12 @@ void ChrCopyNumber::recalculateRatio(double *a, int degree) {
 			//use a threshold, but correct using notN profile
 			if (mappabilityProfile_.size()>0) {
 				if ((x>0)&&(mappabilityProfile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
-					//ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
-					ratio_[i] = ratio_[i]/1;
+					ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
 				else
 					ratio_[i] = NA;
 			} else {
 				if ((x>0)&&(notNprofile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
-					//ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
-					ratio_[i] = ratio_[i]/1;
+					ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
 				else
 					ratio_[i] = NA;
 
@@ -610,8 +608,7 @@ void ChrCopyNumber::calculateRatio(double *a, int degree) {
 			if (uniqueMatch) {
                 //use mappabilityProfile_ and correct
                 if ((x>0)&&(mappabilityProfile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
-                    //ratio_[i] = readCount_[i]/polynomial(x,a,1,degree)/mappabilityProfile_[i];
-					ratio_[i] = readCount_[i]/1/mappabilityProfile_[i];
+                    ratio_[i] = readCount_[i]/polynomial(x,a,1,degree)/mappabilityProfile_[i];
                 else
                     ratio_[i] = NA;
 
@@ -619,14 +616,12 @@ void ChrCopyNumber::calculateRatio(double *a, int degree) {
                 //use a threshold, but correct using notN profile
                 if (mappabilityProfile_.size()>0) {
                     if ((x>0)&&(mappabilityProfile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
-                        //ratio_[i] = readCount_[i]/polynomial(x,a,1,degree)/notNprofile_[i];
-						ratio_[i] = readCount_[i]/1/notNprofile_[i];
+                        ratio_[i] = readCount_[i]/polynomial(x,a,1,degree)/notNprofile_[i];
                     else
                         ratio_[i] = NA;
                 } else {
                     if ((x>0)&&(notNprofile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
-                        //ratio_[i] = readCount_[i]/polynomial(x,a,1,degree)/notNprofile_[i];
-						ratio_[i] = readCount_[i]/1/notNprofile_[i];
+                        ratio_[i] = readCount_[i]/polynomial(x,a,1,degree)/notNprofile_[i];
                     else
                         ratio_[i] = NA;
 
