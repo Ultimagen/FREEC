@@ -267,6 +267,10 @@ int main(int argc, char *argv[])
 
     bool has_window = cf.hasValue("general","window");
     int window = (int)cf.Value("general","window",NA);
+    bool naiveNormalization = cf.Value("general", "NaiveNormalization",false);
+    if (naiveNormalization) {
+        cout << "..will use naive normalization without polynomial fit.\n";
+    }
     bool ifTargeted = cf.hasValue("target","captureRegions");
 
 
@@ -1097,7 +1101,7 @@ int main(int argc, char *argv[])
         isSuccessfulFit = runWithDefinedPloidy(ploidy,sampleCopyNumber,controlCopyNumber,isControlIsPresent,forceGC,has_BAF,ifTargeted,WESanalysis,
         degree,intercept,logLogNorm,minExpectedGC,maxExpectedGC,knownContamination,breakPointThreshold,breakPointType,minCNAlength,
         teloCentroFlanks, RSS,percentage_GenExpl,contaminationAdjustment,contamination, thrPool,thrPoolManager,
-        makePileup,seekSubclones,myName,unexplainedChromosomes, CompleteGenomicsData,normalization);
+        makePileup,seekSubclones,myName,unexplainedChromosomes, CompleteGenomicsData,normalization,naiveNormalization);
 
     }
 
@@ -1133,7 +1137,7 @@ int main(int argc, char *argv[])
         isSuccessfulFit=runWithDefinedPloidy(bestPloidy,sampleCopyNumber,controlCopyNumber,isControlIsPresent,forceGC,has_BAF,ifTargeted,WESanalysis,
         degree,intercept,logLogNorm,minExpectedGC,maxExpectedGC,knownContamination,breakPointThreshold,breakPointType,minCNAlength,
         teloCentroFlanks, RSS,percentage_GenExpl,contaminationAdjustment,contamination, thrPool,thrPoolManager,makePileup,seekSubclones,
-         myName,unexplainedChromosomes, CompleteGenomicsData,normalization);
+         myName,unexplainedChromosomes, CompleteGenomicsData,normalization,naiveNormalization);
     }
 
     double breakPointThreshold_BAF=1;
@@ -1190,7 +1194,9 @@ int main(int argc, char *argv[])
             }
         }
 
-	sampleCopyNumber.printRatio(myName+"_ratio.txt",0,printNA);
+	
+    sampleCopyNumber.printSegments(myName+"_segments.txt");
+    sampleCopyNumber.printRatio(myName+"_ratio.txt",0,printNA);
 	if (ifBedGraphOutPut) {
             sampleCopyNumber.printRatio(myName+"_ratio.BedGraph",1,printNA);
     }
@@ -1226,7 +1232,7 @@ int runWithDefinedPloidy(int ploidy, GenomeCopyNumber & sampleCopyNumber, Genome
         int degree,int intercept,bool logLogNorm,float minExpectedGC,float maxExpectedGC,float knownContamination,float breakPointThreshold,int breakPointType,int minCNAlength,
         int teloCentroFlanks, vector<double> & RSS, vector<double> &percentage_GenExpl,bool contaminationAdjustment,vector<double> &contamination, ThreadPool * thrPool,
         ThreadPoolManager * thrPoolManager, string makePileup, float seekSubclones, std::string myName, vector<int> &unexplainedChromosomes, bool CompleteGenomicsData,
-        bool normalization) {
+        bool normalization, bool naiveNormalization) {
         //NORMALIZE READ COUNT:
         sampleCopyNumber.setPloidy(ploidy);
         sampleCopyNumber.setNormalContamination(knownContamination);
@@ -1236,7 +1242,12 @@ int runWithDefinedPloidy(int ploidy, GenomeCopyNumber & sampleCopyNumber, Genome
         if (normalization) {
             if (isControlIsPresent) {
                 if (((!forceGC) && (!has_BAF)) || (ifTargeted&&forceGC!=1) || (WESanalysis == true &&forceGC==0)) { //normalize sample density with control density
-                    successfulFit = sampleCopyNumber.calculateRatio(controlCopyNumber, degree,intercept);
+                    if(naiveNormalization){
+                        sampleCopyNumber.calculateRatio(controlCopyNumber);
+                    }
+                    else{
+                        successfulFit = sampleCopyNumber.calculateRatio(controlCopyNumber, degree,intercept);
+                    }
                 } else { //forceGC != 0
                     if (forceGC==1) { //normalize first Sample and Control, and then calculate the ratio
                         if (degree==NA) {
@@ -1298,6 +1309,10 @@ int runWithDefinedPloidy(int ploidy, GenomeCopyNumber & sampleCopyNumber, Genome
         } else { //does not need to normalize the data:
             sampleCopyNumber.fillInRatio();
             cout << "..Filled in read counts -> done\n";
+        }
+        if (isControlIsPresent)
+        {
+            controlCopyNumber.fillInRatio();
         }
 
     //segmentation:

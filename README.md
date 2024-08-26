@@ -19,7 +19,7 @@ Control-FREEC accepts .GZ files. Support of Eland, BED, SOAP, arachne, psl (BLAT
 
 **Input for CNA+LOH detection:** There are two options: (a) provide aligned reads in SAMtools pileup format. Files can be GZipped; (b) provide BAM files together with options "makePileup" and "fastaFile" (see "How to create a config file?" in the manual.)
 
-**Output:** Regions of gains, losses and LOH, copy number and BAF profiles.
+**Output:** Regions of gains, losses and LOH, copy number, segments and BAF profiles.
 
 ---------------------------------------------------------------------------------------------------------------------------
 

@@ -43,6 +43,7 @@ public:
     void removeLowReadCountWindowsFromControl (int RCThresh);
 
     int fillInRatio();
+	void calculateRatio( GenomeCopyNumber & controlCopyNumber);
 	int calculateRatio( GenomeCopyNumber & controlCopyNumber, int degree, bool intercept) ;
     void calculateRatioUsingCG( GenomeCopyNumber & controlCopyNumber) ;
     void calculateRatioUsingCG_Regression( GenomeCopyNumber & controlCopyNumber) ;
@@ -75,6 +76,8 @@ public:
 	float evaluateContamination();
     float evaluateContaminationwithLR();
 
+	void printSegments(std::string const& outFile);
+	void printSegments(ChrCopyNumber chr_copy_number, std::ofstream & file);
 	void printRatio(std::string const& outFile, bool ifBedGraphOutPut, bool printNA);
 	void printRatio(std::string const& chr, std::string const& outFile, bool printNA);
 	void printRatio(std::string const& chr, std::ofstream & file, bool printNA);

@@ -21,6 +21,9 @@ http://www.fsf.org/licensing/licenses
 
 #include "GenomeCopyNumber.h"
 
+#include <iostream>
+#include <fstream>
+
 using namespace std ;
 
 GenomeCopyNumber::GenomeCopyNumber(void)
@@ -1170,7 +1173,7 @@ long double GenomeCopyNumber::calculateRSS(int ploidy)
 		}
 	}
 
-    long double RSS = 0;
+    long double RSS = 0;    
     for (int i = 0; i < (int)observedvalues.size(); i++)
         {
         if ((observedvalues[i]!=NA) && (expectedvalues[i]!=NA))
@@ -1179,6 +1182,7 @@ long double GenomeCopyNumber::calculateRSS(int ploidy)
             RSS = RSS + (long double)pow(diff,2);
             }
         }
+
     if (observedvalues.size()==0) {
         return 0;
     }
@@ -1309,9 +1313,61 @@ int GenomeCopyNumber::fillInRatio() {
     return 1;
 }
 
+void GenomeCopyNumber::calculateRatio( GenomeCopyNumber & controlCopyNumber){
+    
+    vector <float> y;
+    vector <float> x;
+    //fill x and y:
+        vector<ChrCopyNumber>::iterator it;
+        for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ) {
+            if (! (it->getChromosome().find("X")!=string::npos || it->getChromosome().find("Y")!=string::npos)) {
+                vector <float> controlcounts = controlCopyNumber.getChrCopyNumber(it->getChromosome()).getValues() ;
+                //check that everything is all right:
+                if (int(controlcounts.size())!=it->getLength()) {
+                    cerr << "Possible Error: calculateMedianAround ()\n";
+                }
+                for (int i = 0; i< it->getLength(); i++) {
+                    if (it->getValueAt(i)>0) {
+                        x.push_back(controlcounts[i]);
+                        y.push_back(it->getValueAt(i));
+                    }
+                }
+                controlcounts.clear();
+            }
+        }
+        
+        float control_mean = get_mean(x);       
+        float sample_median = get_median(y);
+        float sample_mean = get_mean(y);
+        const float minRatio = 0.97;
+        const float maxRatio = 1.03;
+        vector <float> y_unalternated;
+        for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ){
+            if (! (it->getChromosome().find("X")!=string::npos || it->getChromosome().find("Y")!=string::npos)){
+                vector <float> controlcounts = controlCopyNumber.getChrCopyNumber(it->getChromosome()).getValues() ;
+                for (int i = 0; i< it->getLength(); i++) {
+                    if (it->getValueAt(i)>0) {
+                        float rc_sample = it->getValueAt(i);
+                        float naive_ratio = (rc_sample/sample_mean)/(controlcounts[i]/control_mean);
+                        if((naive_ratio>minRatio) && (naive_ratio<maxRatio)){
+                            y_unalternated.push_back(rc_sample);
+                        }
+                    }
+                }
+                controlcounts.clear();
+            }
+        }
+        sample_median = get_median(y_unalternated);
+        sample_mean = get_mean(y_unalternated);
+        cout << "sample median value: " << sample_median << "\n";
+
+        for ( it=chrCopyNumber_.begin() ; it != chrCopyNumber_.end(); it++ ) {
+                it->calculateRatio(controlCopyNumber.getChrCopyNumber(it->getChromosome()),control_mean,sample_mean);
+            }
+        
+}
+
 int GenomeCopyNumber::calculateRatio( GenomeCopyNumber & controlCopyNumber, int degree, bool intercept) {
-
-
     int maximalNumberOfIterations = 300;
     int maximalNumberOfCopies = ploidy_*2;
     int realNumberOfIterations = maximalNumberOfIterations;
@@ -1554,6 +1610,7 @@ int GenomeCopyNumber::calculateRatio( GenomeCopyNumber & controlCopyNumber, int 
                 controlcounts.clear();
             }
         }
+
 	//const char * nametmp = "/bioinfo/users/vboeva/Desktop/TMP/Lena/patientT/xy.txt";
 	//std::ofstream file;
 	//file.open(nametmp);
@@ -2983,6 +3040,39 @@ void GenomeCopyNumber::calculateSomaticCNVs (std::vector <EntryCNV> controlCNVs,
 	}
 
 }
+
+void GenomeCopyNumber::printSegments(std::string const& outFile) {
+    std::ofstream file (outFile.c_str());
+    map<string,int>::iterator it;
+
+	file << "chr\tstart\tend\tmedian_ratio\tsd_ratio\n";
+    for (int i = 0; i < (int)chrCopyNumber_.size(); i++) {
+        printSegments(chrCopyNumber_[i],file);
+	}
+	file.close();
+}
+
+void GenomeCopyNumber::printSegments(ChrCopyNumber chr_copy_number, std::ofstream & file) {
+	string::size_type pos = 0;
+	string chrNumber = chr_copy_number.getChromosome();
+	if ( ( pos = chrNumber.find("chr", pos)) != string::npos )
+		chrNumber.replace( pos, 3, "" );
+	map<string,ChrCopyNumber>::iterator it;
+	int index = findIndex(chrNumber);
+	if (index == NA) {return;}
+	//cout << "..index found "<<index<<"\n";
+	int segments_length = chrCopyNumber_[index].getSegmentsSize();
+	//cout <<length<<" == "<<chrCopyNumber_[index].getValues().size() <<"\n";
+	for (int i = 0; i< segments_length-1; i++) {
+        int start = windowSize_ * chrCopyNumber_[index].getSegmentsAtPoint(i);
+		int end = windowSize_ * chrCopyNumber_[index].getSegmentsAtPoint(i+1);
+		float median_ratio = chrCopyNumber_[index].getSegmentsMedianRatiosAtPoint(i+1);
+		float sd_ratio = chrCopyNumber_[index].getSegmentsSdRatiosAtPoint(i+1);
+        file <<"chr"<<chrNumber<<"\t"<<start<<"\t"<<end<<"\t"<<median_ratio<<"\t"<<sd_ratio<<"\n";
+	}
+	cout <<"..writing segments for " <<chrNumber <<"->done!\n";
+}
+
 void GenomeCopyNumber::printRatioBedGraph(std::string const& chr, std::ofstream & file, std::string const& typeCNA) {
     string::size_type pos = 0;
     float value;
@@ -3558,35 +3648,35 @@ void GenomeCopyNumber::addBAFinfo(SNPinGenome & snpingenome) {
 
         chrCopyNumber_[index].addBAFinfo(snpingenome,indexSNP);
 
-		//int length = chrCopyNumber_[index].getLength();
+		int length = chrCopyNumber_[index].getLength();
 
 		//create a vector with BAF
-//		chrCopyNumber_[index].createBAF(NA);
-//        int totalSNPnumber = snpingenome.SNP_atChr(indexSNP).getSize() ;
-//		int SNPcount = 0;
-//		float currentBAF = snpingenome.SNP_atChr(indexSNP).getValueAt(SNPcount);
-//		int getSNPpos = snpingenome.SNP_atChr(indexSNP).getPositionAt(SNPcount);
-//        float minBAF;
-//		for (int i = 0; i<length; i++) {
-//		    int left = chrCopyNumber_[index].getCoordinateAtBin(i);
-//		    int right = chrCopyNumber_[index].getEndAtBin(i);
-//		    if (getSNPpos>=left && getSNPpos <=right) {
-//		        minBAF = chrCopyNumber_[index].getBAFat(i);
-//                if (minBAF==NA) {
-//                    chrCopyNumber_[index].setBAFat(i,currentBAF);
-//                } else {
-//                    chrCopyNumber_[index].setBAFat(i,min(minBAF,currentBAF));
-//                }
-//		    } else if (getSNPpos<left) {
-//                if (SNPcount < totalSNPnumber) {
-//                    SNPcount++;
-//                    getSNPpos = snpingenome.SNP_atChr(indexSNP).getPositionAt(SNPcount);
-//                    currentBAF = snpingenome.SNP_atChr(indexSNP).getValueAt(SNPcount);
-//                    i=max(-1,i-windowSize_/step_-1);
-//                    //cout << SNPcount << " out of "<< totalSNPnumber<<"\n";
-//                }
-//            }
-//		}
+		chrCopyNumber_[index].createBAF(NA);
+        int totalSNPnumber = snpingenome.SNP_atChr(indexSNP).getSize() ;
+		int SNPcount = 0;
+		float currentBAF = snpingenome.SNP_atChr(indexSNP).getValueAt(SNPcount);
+		int getSNPpos = snpingenome.SNP_atChr(indexSNP).getPositionAt(SNPcount);
+        float minBAF;
+		for (int i = 0; i<length; i++) {
+		    int left = chrCopyNumber_[index].getCoordinateAtBin(i);
+		    int right = chrCopyNumber_[index].getEndAtBin(i);
+		    if (getSNPpos>=left && getSNPpos <=right) {
+		        minBAF = chrCopyNumber_[index].getBAFat(i);
+                if (minBAF==NA) {
+                    chrCopyNumber_[index].setBAFat(i,currentBAF);
+                } else {
+                    chrCopyNumber_[index].setBAFat(i,min(minBAF,currentBAF));
+                }
+		    } else if (getSNPpos<left) {
+                if (SNPcount < totalSNPnumber) {
+                    SNPcount++;
+                    getSNPpos = snpingenome.SNP_atChr(indexSNP).getPositionAt(SNPcount);
+                    currentBAF = snpingenome.SNP_atChr(indexSNP).getValueAt(SNPcount);
+                    i=max(-1,i-windowSize_/step_-1);
+                    //cout << SNPcount << " out of "<< totalSNPnumber<<"\n";
+                }
+            }
+		}
 	}
 }
 

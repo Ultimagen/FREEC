@@ -455,7 +455,6 @@ void ChrCopyNumber::calculateRatioLog(ChrCopyNumber control, const double * a, c
 				ratio_[i] = NA;
 			else
 				ratio_[i] = NA;
-		//cout << readCount_[i] << "\t" << control.getValueAt(i) << "\t" << ratio_[i] << "\n";
 	}
 }
 
@@ -464,9 +463,30 @@ void ChrCopyNumber::calculateRatio(ChrCopyNumber control, const double * a, cons
 		ratio_.resize(length_);
 	for (int i = 0; i<length_; i++) {
 		if ((control.getLength()>i)&&(control.getValueAt(i) != 0)){
+			if (mappabilityProfile_.size() == 0 || mappabilityProfile_[i] > minMappabilityPerWindow) {
+                		ratio_[i] = readCount_[i]/polynomial(control.getValueAt(i),a,1,degree);				
+				if (ratio_[i]<0)
+					ratio_[i] = NA;
+			} else
+                		ratio_[i] = NA;
+		} else
+			if (readCount_[i]==0)
+				ratio_[i] = NA;
+			else
+				ratio_[i] = NA;
+	}
+}
+
+
+void ChrCopyNumber::calculateRatio(ChrCopyNumber control,const float control_median,const float sample_median){
+	if ((int)ratio_.size()!=length_)
+		ratio_.resize(length_);
+	for (int i = 0; i<length_; i++) {
+		if ((control.getLength()>i)&&(control.getValueAt(i) != 0)){
 
 			if (mappabilityProfile_.size() == 0 || mappabilityProfile_[i] > minMappabilityPerWindow) {
-                ratio_[i] = readCount_[i]/polynomial(control.getValueAt(i),a,1,degree);
+				ratio_[i] = (readCount_[i]/sample_median)/(control.getValueAt(i)/control_median);
+				
 				if (ratio_[i]<0)
 					ratio_[i] = NA;
 			} else
@@ -478,7 +498,6 @@ void ChrCopyNumber::calculateRatio(ChrCopyNumber control, const double * a, cons
 				ratio_[i] = NA;
 			else
 				ratio_[i] = NA;
-		//cout << readCount_[i] << "\t" << control.getValueAt(i) << "\t" << ratio_[i] << "\n";
 	}
 }
 
@@ -494,7 +513,6 @@ void ChrCopyNumber::recalculateRatio(ChrCopyNumber control){
 				ratio_[i] = NA;
 		} else
 			ratio_[i] = NA;
-		//cout << readCount_[i] << "\t" << control.getValueAt(i) << "\t" << ratio_[i] << "\n";
 	}
 }
 
@@ -558,22 +576,19 @@ void ChrCopyNumber::recalculateRatio(double *a, int degree) {
 	for (int i = 0; i<length_; i++) {
 		if (ratio_[i] != NA) {
 			x = GCprofile_[i];
+			//use a threshold, but correct using notN profile
+			if (mappabilityProfile_.size()>0) {
+				if ((x>0)&&(mappabilityProfile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
+					ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
+				else
+					ratio_[i] = NA;
+			} else {
+				if ((x>0)&&(notNprofile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
+					ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
+				else
+					ratio_[i] = NA;
 
-                //use a threshold, but correct using notN profile
-                if (mappabilityProfile_.size()>0) {
-                    if ((x>0)&&(mappabilityProfile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
-                        ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
-                    else
-                        ratio_[i] = NA;
-                } else {
-                    if ((x>0)&&(notNprofile_[i]>minMappabilityPerWindow)) //if ((x>0)&&(notNprofile_[i]!=0))
-                        ratio_[i] = ratio_[i]/polynomial(x,a,1,degree);
-                    else
-                        ratio_[i] = NA;
-
-                }
-
-
+			}
 		}
 		if ((ratio_[i] != NA)&&(ratio_[i] < 0))
 			ratio_[i] = 0; //this happens if  polynomial(x,a,b,c,d) < 0
@@ -658,15 +673,27 @@ void ChrCopyNumber::recalculateLogRatio (float constant) {
 }
 
 void ChrCopyNumber::recalculateRatioWithContam (float contamination, float normGenytype, bool isLogged) { //normGenytype==1 if AB, normGenytype==0.5 if A
-	if (!isLogged) {
-        for (int i = 0; i<length_; i++)
-            if (ratio_[i] != NA) {
-			//ratio_[i] = (ratio_[i]-contamination*normGenytype)/(1-contamination); //correct only for ploidy 2
-                ratio_[i] = (ratio_[i]*(1-contamination+2*contamination/ploidy_) -contamination*normGenytype/ploidy_*2)/(1-contamination);
-
-			if (ratio_[i]<0)
-				ratio_[i] = 0;
+	if (!isLogged) {	
+		auto out_file_name = "FC_correction_contam." + std::to_string(contamination) + ".tsv";
+		ofstream myFile(out_file_name);
+		myFile << "isLogged: "<< isLogged <<"; length_: " << length_ << "; ratio_size: " << ratio_.size() << "\n";
+		myFile << "raw_FC\tFREEC_Corrected\tUG_Corrected\n";
+		for (int i = 0; i<length_; i++)
+		{
+			myFile << ratio_[i] << "\t";
+				if (ratio_[i] != NA) {
+				//ratio_[i] = (ratio_[i]-contamination*normGenytype)/(1-contamination); //correct only for ploidy 2
+				float freec_correction = (ratio_[i]*(1-contamination+2*contamination/ploidy_) -contamination*normGenytype/ploidy_*2)/(1-contamination);				
+				float ug_correction = (ratio_[i]+contamination-1)/contamination;
+				myFile << freec_correction << "\t" << ug_correction << "\n";
+				ratio_[i] = freec_correction;
+				
+				if (ratio_[i]<0)
+					ratio_[i] = 0;
+			}
+			myFile << "\n";
 		}
+		myFile.close();
     } else {
         for (int i = 0; i<length_; i++)
             if (ratio_[i] != NA) {
@@ -709,6 +736,10 @@ int ChrCopyNumber::getCoveredPart(int breakPointStart, int breakPointEnd) { //fo
 }
 
 void ChrCopyNumber::calculateCopyNumberMedian(int ploidy, int minCNAlength, bool noisyData,  bool CompleteGenomicsData, bool isLogged){ //create median profiles using 'bpfinal_' and store them in medianProfile_, info about medians themselves is stored in medianValues_ and about SD in sd_, lengths of fragments in bpLengths_
+	
+	auto out_file_name = "segments_info.p" + std::to_string(ploidy) + ".tsv";
+	ofstream myFile(out_file_name,std::ios::app);
+	
 	if (ploidy!=ploidy_) {
         cerr << "..Warning: in calculateCopyNumberMedian() class's ploidy is different from "<<ploidy<<"\n";
         ploidy_=ploidy;
@@ -881,6 +912,7 @@ void ChrCopyNumber::calculateCopyNumberMedian(int ploidy, int minCNAlength, bool
                // cout << "..Control: adding "<<medianBAFSym<< " to a fragment with median*ploidy="<<median*ploidy<< "\n";
 
 			}
+			myFile << chromosome_ << "\t" << breakPointStart << "\t" << breakPointEnd << "\t" << median << "\t" << sd(data,median) << "\n";
 
 			breakPointStart = breakPointEnd+1;
 			data.clear();
@@ -904,6 +936,7 @@ void ChrCopyNumber::calculateCopyNumberMedian(int ploidy, int minCNAlength, bool
 
 	bpfinal_.pop_back(); //delete last point which is (length_-1)
 	isMedianCalculated_ = true;
+	myFile.close();
 }
 
 
@@ -1127,6 +1160,27 @@ std::vector <int> ChrCopyNumber::getBreakPoints() {
 int ChrCopyNumber::getNumberOfFragments() {
 	return bpfinal_.size()+1;
 }
+
+//added get functions for print segments
+int ChrCopyNumber::getSegmentsAtPoint(int i) {
+	return bpfinal_[i];
+}
+int ChrCopyNumber::getSegmentsSize() {
+	return bpfinal_.size();
+}
+float ChrCopyNumber::getSegmentsMedianRatiosAtPoint(int i) {
+	return medianValues_[i];
+}
+int ChrCopyNumber::getSegmentsMedianRatiosSize() {
+	return medianValues_.size();
+}
+float ChrCopyNumber::getSegmentsSdRatiosAtPoint(int i) {
+	return sd_[i];
+}
+float ChrCopyNumber::getSegmentsSdRatiosSize() {
+	return sd_.size();
+}
+//finish get functions for print segments
 
 int ChrCopyNumber::nextNoNAIndex(int i1, int ploidy, int min_fragment) {
 	for (int i = i1+1; i<(int)medianValues_.size(); i++)

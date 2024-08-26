@@ -55,6 +55,9 @@ chrFiles = path/hg19/
 ##set BedGraphOutput=TRUE if you want to create a BedGraph track for visualization in the UCSC genome browser:
 #BedGraphOutput=TRUE
 
+##set NaiveNormalization=TRUE if you want to avoid using polynomial fit and calculate ratio naively: (sample/mean)/(control/mean) . 
+#NaiveNormalization=TRUE
+
 [sample]
 
 mateFile = /path/sample.bam

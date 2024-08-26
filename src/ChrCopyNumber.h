@@ -35,6 +35,7 @@ public:
     void recalculateRatio(ChrCopyNumber control);
 	void calculateRatio(ChrCopyNumber control, double a0, double a1);
 	void calculateRatio(ChrCopyNumber control, const double * a, const int degree);
+	void calculateRatio(ChrCopyNumber control,const float control_median,const float sample_median);
 	void calculateRatioLog(ChrCopyNumber control, const double * a, const int degree);
 	int calculateBreakpoints(double breakPointThreshold, int firstChrLength, int breakPointType);
     int calculateBAFBreakpoints(double breakPointThreshold, int firstChrLength, int breakPointType);
@@ -95,6 +96,14 @@ public:
 
 	int getEndsSize();
 	int	getMappabilityLength();
+	
+	// added for print segments 
+	int getSegmentsAtPoint(int i);
+	int getSegmentsSize();
+	float getSegmentsMedianRatiosAtPoint(int i);
+	int getSegmentsMedianRatiosSize();
+	float getSegmentsSdRatiosAtPoint(int i);
+	float getSegmentsSdRatiosSize();
 
 	bool isMedianCalculated();
 	bool isSmoothed();
